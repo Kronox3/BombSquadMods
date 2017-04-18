@@ -20,6 +20,7 @@ class CTFFlag(bs.Flag):
         self._counter = bs.newNode('text',
                                    owner=self.node,
                                    attrs={'inWorld':True,'scale':0.02,'hAlign':'center'})
+        self._autoRespawnTimer = int(self.getActivity().settings['Auto Respawn Loop'])
         self.resetReturnTimes()
 
     def resetReturnTimes(self):
@@ -34,11 +35,11 @@ class CTFGame(bs.TeamGameActivity):
 
     @classmethod
     def getName(cls):
-        return 'Capture the Flag'
+        return 'RG Capture the Flag'
 
     @classmethod
     def getDescription(cls,sessionType):
-        return 'Return the enemy flag to score.'
+        return 'Return the enemy flag to score (RG Style).'
 
     @classmethod
     def supportsSessionType(cls,sessionType):
@@ -57,6 +58,7 @@ class CTFGame(bs.TeamGameActivity):
                                         ('2 Minutes',120),('5 Minutes',300),
                                         ('10 Minutes',600),('20 Minutes',1200)],'default':0}),
                 ("Respawn Times",{'choices':[('Shorter',0.25),('Short',0.5),('Normal',1.0),('Long',2.0),('Longer',4.0)],'default':1.0}),
+                ("Auto Respawn Loop",{'choices':[('Off',0),('Shorter',5),('Short',10),('Normal',15),('Long',20),('Longer',30)],'default':0}),
                 ("Epic Mode",{'default':False})]
 
 
@@ -190,6 +192,11 @@ class CTFGame(bs.TeamGameActivity):
         # if either flag is away from base and not being held, tick down its respawn timer
         for team in self.teams:
             flag = team.gameData['flag']
+
+            if self.settings['Auto Respawn Loop'] != 0:
+                flag._autoRespawnTimer -= 1
+                if flag._autoRespawnTimer <= 0:
+                    flag.handleMessage(bs.DieMessage())
 
             if not team.gameData['homeFlagAtBase'] and flag._heldCount == 0:
                 timeOutCountingDown = True
